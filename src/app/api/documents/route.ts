@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     parent_id: parent_id || null, position: 0,
     tags: JSON.stringify(tags || []), share_id: null,
     is_template: 0, template_name: null,
+    views: 0, is_favorite: 0,
     created_at: now, updated_at: now,
   };
   saveDb(db);

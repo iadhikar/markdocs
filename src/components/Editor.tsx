@@ -16,6 +16,9 @@ import {
   Check,
   X,
   Link,
+  Star,
+  BarChart3,
+  BookOpen,
 } from "lucide-react";
 
 const CodeMirrorEditor = dynamic(() => import("./CodeMirrorEditor"), {
@@ -36,9 +39,12 @@ interface EditorProps {
   content: string;
   tags: string[];
   shareId: string | null;
+  views?: number;
+  isFavorite?: boolean;
   onSave: (updates: { title?: string; content?: string; tags?: string[] }) => Promise<void>;
   onShare: () => Promise<string | null>;
   onUnshare: () => Promise<void>;
+  onToggleFavorite?: () => void;
   onWikiLinkClick?: (pageName: string) => void;
 }
 
@@ -50,9 +56,12 @@ export default function Editor({
   content: initialContent,
   tags: initialTags,
   shareId,
+  views = 0,
+  isFavorite = false,
   onSave,
   onShare,
   onUnshare,
+  onToggleFavorite,
   onWikiLinkClick,
 }: EditorProps) {
   const [title, setTitle] = useState(initialTitle);
@@ -309,15 +318,42 @@ export default function Editor({
         </div>
       )}
 
-      {/* Title */}
+      {/* Title + Stats */}
       <div className="px-6 pt-4">
-        <input
-          value={title}
-          onChange={(e) => handleTitleChange(e.target.value)}
-          className="w-full text-2xl font-bold outline-none bg-transparent"
-          style={{ color: "var(--text-primary)" }}
-          placeholder="Untitled Document"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            className="flex-1 text-2xl font-bold outline-none bg-transparent"
+            style={{ color: "var(--text-primary)" }}
+            placeholder="Untitled Document"
+          />
+          {onToggleFavorite && (
+            <button
+              onClick={onToggleFavorite}
+              className="p-1.5 rounded-md transition-colors"
+              title={isFavorite ? "Unfavorite" : "Favorite"}
+            >
+              <Star
+                size={18}
+                fill={isFavorite ? "#f59e0b" : "none"}
+                style={{ color: isFavorite ? "#f59e0b" : "var(--text-muted)" }}
+              />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-4 mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+          <span className="flex items-center gap-1">
+            <BookOpen size={11} />
+            {Math.ceil(content.split(/\s+/).filter(Boolean).length / 200)} min read
+          </span>
+          <span>{content.split(/\s+/).filter(Boolean).length} words</span>
+          {views > 0 && (
+            <span className="flex items-center gap-1">
+              <BarChart3 size={11} /> {views} views
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Editor Content */}
@@ -337,6 +373,7 @@ export default function Editor({
             <MarkdownRenderer
               content={content}
               onWikiLinkClick={onWikiLinkClick}
+              showToc={viewMode === "preview"}
             />
           </div>
         )}

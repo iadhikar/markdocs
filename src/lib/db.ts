@@ -26,6 +26,8 @@ export interface DocumentRow {
   share_id: string | null;
   is_template: number;
   template_name: string | null;
+  views: number;
+  is_favorite: number;
   created_at: string;
   updated_at: string;
 }
@@ -91,6 +93,7 @@ function seed(): DbSchema {
     content: "# Welcome to Markdocs\n\nMarkdocs is a **Confluence-like platform** built exclusively for Markdown files.\n\n## Key Features\n\n- **Spaces & Folders** \u2014 Organize docs into workspaces\n- **Live Editor** \u2014 Split-pane editor with instant preview\n- **Wiki Linking** \u2014 Use `[[Page Name]]` to cross-reference documents\n- **Full-text Search** \u2014 Find anything instantly\n- **Share Links** \u2014 One-click public sharing\n- **Templates** \u2014 Meeting notes, RFCs, ADRs, and more\n- **Version History** \u2014 Track every change\n- **Tags** \u2014 Categorize and filter your docs\n- **Dark Mode** \u2014 Easy on the eyes\n\n## Getting Started\n\n1. Create a **Space** to organize your documents\n2. Click **New Document** to start writing\n3. Use Markdown syntax \u2014 everything you know works here\n4. Use `[[double brackets]]` to link between documents\n\n## Markdown Examples\n\n### Tables\n\n| Feature | Status |\n|---------|--------|\n| Editor | Done |\n| Search | Done |\n| Sharing | Done |\n\n### Code Blocks\n\n```typescript\nfunction greet(name: string): string {\n  return `Hello, ${name}! Welcome to Markdocs.`;\n}\n```\n\n### Task Lists\n\n- [x] Build the editor\n- [x] Add search\n- [x] Add sharing\n- [ ] World domination\n\n> **Tip:** Press `Ctrl+S` (or `Cmd+S`) to save your document quickly.\n",
     parent_id: null, position: 0, tags: "[\"welcome\", \"getting-started\"]",
     share_id: null, is_template: 0, template_name: null,
+    views: 0, is_favorite: 0,
     created_at: now(), updated_at: now(),
   };
 
@@ -106,6 +109,7 @@ function seed(): DbSchema {
       id: tpl.id, space_id: "default", title: tpl.title, slug: tpl.name,
       content: tpl.content, parent_id: null, position: 0, tags: "[]",
       share_id: null, is_template: 1, template_name: tpl.name,
+      views: 0, is_favorite: 0,
       created_at: now(), updated_at: now(),
     };
   }

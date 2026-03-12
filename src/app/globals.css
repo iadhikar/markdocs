@@ -192,3 +192,21 @@ body {
 .wiki-link:hover {
   border-bottom-style: solid;
 }
+
+/* Mermaid diagrams */
+.mermaid-container, .mermaid {
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.mermaid svg {
+  max-width: 100%;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

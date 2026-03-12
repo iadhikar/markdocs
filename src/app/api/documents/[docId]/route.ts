@@ -9,6 +9,12 @@ export async function GET(
   const doc = db.documents[params.docId] ||
     Object.values(db.documents).find((d) => d.slug === params.docId);
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Increment view count
+  if (doc.views === undefined) doc.views = 0;
+  doc.views++;
+  saveDb(db);
+
   return NextResponse.json(doc);
 }
 

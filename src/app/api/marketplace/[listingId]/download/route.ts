@@ -51,6 +51,8 @@ export async function POST(
         share_id: null,
         is_template: 0,
         template_name: null,
+        views: 0,
+        is_favorite: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -92,6 +94,8 @@ export async function POST(
         share_id: null,
         is_template: 0,
         template_name: null,
+        views: 0,
+        is_favorite: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };

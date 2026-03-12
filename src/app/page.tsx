@@ -180,8 +180,19 @@ export default function Home() {
             content={activeDoc.content}
             tags={parseTags(activeDoc.tags)}
             shareId={activeDoc.share_id}
+            views={(activeDoc as any).views || 0}
+            isFavorite={!!((activeDoc as any).is_favorite)}
             onSave={handleSave}
             onShare={shareDocument}
+            onToggleFavorite={async () => {
+              await fetch(`/api/documents/${activeDoc.id}/favorite`, { method: "POST" });
+              // Refresh doc
+              const res = await fetch(`/api/documents/${activeDoc.id}`);
+              const updated = await res.json();
+              // Force re-render by resetting activeDocId
+              setActiveDocId(null);
+              setTimeout(() => setActiveDocId(updated.id), 0);
+            }}
             onUnshare={unshareDocument}
             onWikiLinkClick={handleWikiLinkClick}
           />
