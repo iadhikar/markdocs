@@ -164,21 +164,48 @@ From community research (Reddit, HackerNews, forums):
 - **AI coding assistants** (Copilot, Claude Code, Cursor) generate markdown docs alongside code.
 - **RAG systems** use markdown as the preferred chunk format for knowledge bases.
 - **Firecrawl** (92K GitHub stars) converts entire websites to "LLM-ready markdown."
-- **Microsoft MarkItDown** (91K stars) converts Office docs to markdown for AI.
-- **Mintlify** supports llms.txt and MCP (Model Context Protocol) so docs are AI-accessible.
+- **Microsoft MarkItDown** (91K stars) converts PDFs, Word, Excel, PowerPoint, images (OCR), audio (transcription), HTML, and more to markdown for LLMs. Key insight from their docs: "mainstream LLMs natively speak Markdown."
+- **Jina Reader** (r.jina.ai) converts any URL to clean markdown for AI, including image captioning via vision models.
+- **Mintlify** supports llms.txt and MCP so docs are AI-accessible. Nearly **half of all documentation traffic now comes from AI agents**.
 
-### 5.2 The Trend
+### 5.2 Markdown as AI Configuration Language
 
-Markdown is evolving from a **human writing format** to a **universal interchange format between humans and AI**. Any platform that stores markdown content becomes automatically AI-compatible.
+Every major AI coding assistant has converged on markdown as its instruction format:
+- **Claude Code** uses `CLAUDE.md` for project instructions and `MEMORY.md` for auto-memory across sessions.
+- **GitHub Copilot** uses `.github/copilot-instructions.md` for repo-specific guidance.
+- **Cursor** uses markdown-based rules files for AI customization.
+- **Continue.dev** uses markdown files with YAML frontmatter for AI code review checks.
 
-### 5.3 Opportunities for Markdocs
+This means markdown is not just content -- it's now the **de facto configuration language for AI agents**.
+
+### 5.3 The llms.txt Web Standard
+
+A new standard (llmstxt.org) formalizes markdown as the bridge between websites and LLMs:
+- Websites place a `/llms.txt` file (in markdown) at their root for LLM-optimized content.
+- Already adopted by VitePress, Docusaurus, Drupal, FastHTML, and Mintlify.
+- The standard states: "the most widely and easily understood format for language models is Markdown."
+
+### 5.4 The Markdown-AI Flywheel
+
+Markdown serves simultaneously as:
+1. **Training data format** (GitHub repos, documentation sites)
+2. **LLM output format** (ChatGPT, Claude, Copilot default to markdown)
+3. **AI agent configuration** (CLAUDE.md, copilot-instructions.md)
+4. **Document interchange** for RAG (MarkItDown, Jina Reader convert everything to markdown)
+5. **Web standard for AI consumption** (llms.txt)
+6. **AI memory format** (Claude's auto memory, progress notes)
+
+The more AI uses markdown, the more content is in markdown, the better LLMs get at it, the more tools build around it. **Any platform at this intersection benefits from compounding.**
+
+### 5.5 Opportunities for Markdocs
 
 1. **AI-powered search** -- Use embeddings/semantic search on top of BM25 for "ask a question, find a doc" UX.
 2. **AI writing assistant** -- Help users write better markdown with AI suggestions.
 3. **AI-generated summaries** -- Auto-generate TL;DR for long documents.
 4. **AI document classification** -- Auto-tag and categorize new documents.
-5. **MCP/llms.txt support** -- Make Markdocs content available to AI agents natively.
-6. **RAG-ready exports** -- Export a whole space as chunked markdown for AI consumption.
+5. **MCP server + llms.txt** -- Make Markdocs content available to AI agents natively. This alone could be a major differentiator.
+6. **RAG-ready exports** -- Export a whole space as chunked markdown for AI consumption, leveraging markdown's heading hierarchy for structure-aware chunking.
+7. **AI agent marketplace** -- Sell CLAUDE.md files, copilot-instructions, and AI prompt libraries alongside regular docs.
 
 ---
 
