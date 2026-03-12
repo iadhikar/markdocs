@@ -73,9 +73,23 @@ From community research (Reddit, HackerNews, forums):
 5. **Non-technical people can't read raw markdown** -- Sharing with business stakeholders requires rendering.
 6. **No standard for cross-linking between repos** -- Wiki-style links only work within a single tool.
 
-### 2.4 Opportunity for Markdocs
+### 2.4 Enterprise Proof Points
+
+- **Spotify / Backstage TechDocs**: Engineers write docs in markdown alongside code. The system hosts **5,000+ documentation sites** with **~10,000 average daily hits**. Now open source and widely adopted.
+- **GitLab**: Runs their **entire company handbook** as markdown in a Git repo. They promote "handbook-first communication" as a documented principle.
+- **Microsoft Learn** (docs.microsoft.com): Built entirely on markdown files in GitHub.
+- **Rust language governance**: Entire RFC process runs via markdown PRs in a Git repo (7,702 commits, 418 contributors, 6,400+ stars). Demonstrates markdown for **decentralized technical governance at scale**.
+- **Mermaid.js** (86.7K GitHub stars): Created to solve "Doc-Rot" -- diagrams embedded as text in markdown stay version-controlled.
+
+### 2.5 The Google Insight
+
+Google uses Google Docs for design documents *specifically because markdown lacks real-time collaboration*. This reveals the #1 gap: **markdown excels at version control and developer workflows but falls short on real-time collaboration** -- which is exactly what HackMD, HedgeDoc, and platforms like Markdocs need to close.
+
+### 2.6 Opportunity for Markdocs
 
 **One-click sharing is a killer feature.** The gap between "I have a great markdown doc" and "anyone can read it" is still too wide. Markdocs's share links solve this directly.
+
+**Real-time collaboration is the unlock for enterprise.** Adding co-editing would let Markdocs compete with Google Docs for the design doc use case while keeping markdown's version control advantages.
 
 ---
 
