@@ -38,6 +38,8 @@ export interface SearchResult {
   slug: string;
   space_id: string;
   snippet: string;
+  score: number;
+  matchedTerms: string[];
 }
 
 export interface TreeNode {
@@ -45,4 +47,30 @@ export interface TreeNode {
   title: string;
   slug: string;
   children: TreeNode[];
+}
+
+// Marketplace types
+export interface MarketplaceListing {
+  id: string;
+  seller_name: string;
+  title: string;
+  description: string;
+  price_cents: number; // price in cents (e.g. 499 = $4.99, 0 = free)
+  content: string; // the actual MD content (hidden until purchased)
+  preview: string; // first ~200 chars shown publicly
+  tags: string;
+  category: string;
+  downloads: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MarketplaceOrder {
+  id: string;
+  listing_id: string;
+  buyer_email: string;
+  amount_cents: number;
+  stripe_session_id: string | null;
+  status: "pending" | "completed" | "free";
+  created_at: string;
 }

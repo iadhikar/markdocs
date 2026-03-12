@@ -7,11 +7,13 @@ import SearchModal from "@/components/SearchModal";
 import NewDocModal from "@/components/NewDocModal";
 import NewSpaceModal from "@/components/NewSpaceModal";
 import WelcomeView from "@/components/WelcomeView";
+import Marketplace from "@/components/Marketplace";
 import { useSpaces, useDocuments, useDocument } from "@/hooks/useDocuments";
 import { Document } from "@/lib/types";
 
 export default function Home() {
   const [darkMode, setDarkMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<"docs" | "marketplace">("docs");
   const [activeSpaceId, setActiveSpaceId] = useState<string | null>(null);
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
@@ -97,7 +99,7 @@ export default function Home() {
 
   const handleSelectDoc = (id: string) => {
     setActiveDocId(id);
-    // Find which space this doc belongs to
+    setActiveTab("docs");
     const doc = documents.find((d) => d.id === id);
     if (doc && doc.space_id !== activeSpaceId) {
       setActiveSpaceId(doc.space_id);
@@ -114,7 +116,6 @@ export default function Home() {
 
   const handleWikiLinkClick = useCallback(
     (pageName: string) => {
-      // Search for doc by title
       const slug = pageName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
@@ -131,6 +132,12 @@ export default function Home() {
     [documents]
   );
 
+  const handleDocSaved = (docId: string) => {
+    refetchDocs();
+    setActiveDocId(docId);
+    setActiveTab("docs");
+  };
+
   const parseTags = (tags: string): string[] => {
     try {
       return JSON.parse(tags);
@@ -146,21 +153,26 @@ export default function Home() {
         documents={documents}
         activeSpaceId={activeSpaceId}
         activeDocId={activeDocId}
+        activeTab={activeTab}
         onSelectSpace={(id) => {
           setActiveSpaceId(id);
           setActiveDocId(null);
+          setActiveTab("docs");
         }}
         onSelectDoc={handleSelectDoc}
         onCreateSpace={() => setShowNewSpace(true)}
         onCreateDoc={() => setShowNewDoc(true)}
         onDeleteDoc={handleDeleteDoc}
         onSearch={() => setShowSearch(true)}
+        onTabChange={setActiveTab}
         darkMode={darkMode}
         onToggleDark={toggleDark}
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        {activeDoc ? (
+        {activeTab === "marketplace" ? (
+          <Marketplace spaces={spaces} onDocSaved={handleDocSaved} />
+        ) : activeDoc ? (
           <Editor
             key={activeDoc.id}
             docId={activeDoc.id}
@@ -188,6 +200,7 @@ export default function Home() {
         isOpen={showSearch}
         onClose={() => setShowSearch(false)}
         onSelectDoc={handleSelectDoc}
+        spaces={spaces}
       />
       <NewDocModal
         isOpen={showNewDoc}
