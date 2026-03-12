@@ -229,17 +229,25 @@ The more AI uses markdown, the more content is in markdown, the better LLMs get 
 
 | Tool | Users | Pricing | Strengths | Weaknesses |
 |------|-------|---------|-----------|------------|
-| **Obsidian** | 1M+ (est.) | Free + $4-10/mo sync/publish | Plugin ecosystem, graph view, local-first | No web app, no collaboration, no marketplace |
-| **Notion** | 30M+ | Free-$20/mo | All-in-one, databases, templates marketplace | Not markdown-native, vendor lock-in, slow |
-| **GitBook** | 100K+ teams | Free-enterprise | Beautiful docs, git sync | Limited to documentation, expensive |
-| **Confluence** | 10M+ | $6-12/user/mo | Enterprise standard | Slow, bloated, not markdown-native |
-| **HackMD** | 100K+ | Free-$8/mo | Real-time collab | Limited organization, no marketplace |
-| **Outline** | Growing | Self-hosted or SaaS | Open source, clean | Smaller ecosystem |
-| **Logseq** | 500K+ (est.) | Free | Open source, outliner | Steeper learning curve |
-| **Mintlify** | 2M+ devs (clients) | $0-$3K/mo | AI-ready, beautiful | Dev docs only, not general-purpose |
-| **ReadMe** | Enterprise | $0-$3K+/mo | API docs, interactive | Dev docs only, expensive |
+| **Obsidian** | 2,000+ plugins | Free + $4-10/mo sync/publish | Plugin ecosystem, graph view, local-first, free for work | No web app, no real-time collaboration, no marketplace |
+| **Notion** | **100M+ users** | Free-$20/mo | All-in-one, databases, 30K+ templates marketplace | Not truly markdown (block-based), poor export fidelity, slow at scale |
+| **GitBook** | 100K+ teams | Free-enterprise | Beautiful docs, AI-native, git sync | Limited export options, customization constraints |
+| **Confluence** | **300K+ orgs** | $6-12/user/mo | Enterprise standard, 8.0/10 TrustRadius (2,506 reviews) | No markdown support, poor search (6.8/10), slow, formatting corruption |
+| **HackMD** | **1M+ users, 7.7M notes** | Free-$8/mo | Real-time collab, GitHub sync | Limited organization, no marketplace |
+| **Outline** | Growing | Self-hosted or SaaS | Open source, clean, API-first | Smaller ecosystem |
+| **Logseq** | 41.5K GitHub stars | Free | Fully open source (AGPL), outliner-first | Performance issues, non-standard markdown output |
+| **Mintlify** | 2M+ monthly devs | $250/mo Pro | AI-native, MCP support, llms.txt | Dev docs only, not general-purpose |
+| **ReadMe** | Enterprise | $79-$3K+/mo | API docs, interactive, AI features | Dev docs only, expensive |
+| **iA Writer** | **2M+ users** | $49.99 one-time | Clean UI, authorship tracking | Personal editor only, no collaboration |
+| **Typora** | Large community | $14.99 one-time | Best WYSIWYG markdown experience | Desktop only, no collaboration, no web |
 
-### 6.2 What Nobody Does
+### 6.2 Top 3 Market Gaps (from competitor analysis)
+
+1. **Collaborative + local-first markdown** -- Obsidian is local-first but has zero collaboration. Notion has collaboration but isn't markdown. Nobody does both.
+2. **Markdown team wiki that non-developers also love** -- Confluence replacement that's actually markdown-native but approachable for non-technical users (WYSIWYG + source view).
+3. **Zero-config beautiful publishing** from standard markdown folders -- no build step, no vendor lock-in, just drop .md files and get a beautiful site.
+
+### 6.3 What Nobody Does
 
 No single tool combines ALL of:
 - Markdown-native editor with live preview
