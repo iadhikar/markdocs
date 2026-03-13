@@ -8,6 +8,7 @@ import NewDocModal from "@/components/NewDocModal";
 import NewSpaceModal from "@/components/NewSpaceModal";
 import WelcomeView from "@/components/WelcomeView";
 import Marketplace from "@/components/Marketplace";
+import GuidedTour from "@/components/GuidedTour";
 import { useSpaces, useDocuments, useDocument } from "@/hooks/useDocuments";
 import { Document } from "@/lib/types";
 
@@ -18,6 +19,7 @@ export default function Home() {
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [showNewDoc, setShowNewDoc] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   const [showNewSpace, setShowNewSpace] = useState(false);
   const [recentDocs, setRecentDocs] = useState<Document[]>([]);
 
@@ -55,6 +57,20 @@ export default function Home() {
       localStorage.setItem("markdocs-dark", String(next));
       return next;
     });
+  };
+
+  // Auto-show tour on first visit
+  useEffect(() => {
+    const toured = localStorage.getItem("markdocs-toured");
+    if (!toured) {
+      const timer = setTimeout(() => setShowTour(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleCloseTour = () => {
+    setShowTour(false);
+    localStorage.setItem("markdocs-toured", "true");
   };
 
   // Keyboard shortcuts
@@ -200,6 +216,7 @@ export default function Home() {
           <WelcomeView
             onCreateDoc={() => setShowNewDoc(true)}
             onSearch={() => setShowSearch(true)}
+            onTakeTour={() => setShowTour(true)}
             recentDocs={recentDocs}
             onSelectDoc={handleSelectDoc}
           />
@@ -222,6 +239,10 @@ export default function Home() {
         isOpen={showNewSpace}
         onClose={() => setShowNewSpace(false)}
         onCreate={handleCreateSpace}
+      />
+      <GuidedTour
+        isOpen={showTour}
+        onClose={handleCloseTour}
       />
     </div>
   );

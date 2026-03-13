@@ -1,10 +1,11 @@
 "use client";
 
-import { BookOpen, FileText, Search, Share2, Layout, Tag } from "lucide-react";
+import { BookOpen, FileText, Search, Share2, Layout, Tag, Compass } from "lucide-react";
 
 interface WelcomeViewProps {
   onCreateDoc: () => void;
   onSearch: () => void;
+  onTakeTour?: () => void;
   recentDocs: { id: string; title: string; updated_at: string }[];
   onSelectDoc: (id: string) => void;
 }
@@ -12,6 +13,7 @@ interface WelcomeViewProps {
 export default function WelcomeView({
   onCreateDoc,
   onSearch,
+  onTakeTour,
   recentDocs,
   onSelectDoc,
 }: WelcomeViewProps) {
@@ -31,6 +33,36 @@ export default function WelcomeView({
             Your Markdown-first documentation platform
           </p>
         </div>
+
+        {/* Take a Tour Banner */}
+        {onTakeTour && (
+          <button
+            onClick={onTakeTour}
+            className="w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all hover:shadow-md mb-6"
+            style={{
+              borderColor: "var(--brand)",
+              background: "var(--brand-light)",
+            }}
+          >
+            <div
+              className="p-2 rounded-lg"
+              style={{ background: "var(--brand)" }}
+            >
+              <Compass size={20} style={{ color: "#fff" }} />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-sm" style={{ color: "var(--brand)" }}>
+                Take a Tour
+              </div>
+              <div className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
+                Discover BM25 search, Marketplace, Mermaid diagrams, llms.txt, and more
+              </div>
+            </div>
+            <span className="text-xs px-2 py-1 rounded-full font-medium" style={{ background: "var(--brand)", color: "#fff" }}>
+              15 steps
+            </span>
+          </button>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4 mb-12">
