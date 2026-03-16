@@ -1,195 +1,171 @@
 "use client";
 
-import { BookOpen, FileText, Search, Share2, Layout, Tag, Compass } from "lucide-react";
+import {
+  BookOpen, FileText, Search, Share2, ShoppingBag, Mic,
+  Compass, Sparkles, Zap, Globe, Star, ArrowRight,
+} from "lucide-react";
 
 interface WelcomeViewProps {
   onCreateDoc: () => void;
   onSearch: () => void;
   onTakeTour?: () => void;
+  onMarketplace?: () => void;
+  onVoiceChat?: () => void;
   recentDocs: { id: string; title: string; updated_at: string }[];
   onSelectDoc: (id: string) => void;
 }
 
 export default function WelcomeView({
-  onCreateDoc,
-  onSearch,
-  onTakeTour,
-  recentDocs,
-  onSelectDoc,
+  onCreateDoc, onSearch, onTakeTour, onMarketplace, onVoiceChat,
+  recentDocs, onSelectDoc,
 }: WelcomeViewProps) {
   return (
     <div className="flex-1 overflow-auto">
-      <div className="max-w-3xl mx-auto px-8 py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
-            style={{ background: "var(--brand-light)" }}
-          >
-            <BookOpen size={32} style={{ color: "var(--brand)" }} />
+      <div className="max-w-5xl mx-auto px-6 py-8">
+
+        {/* Hero */}
+        <div
+          className="relative rounded-2xl p-8 mb-6 overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, var(--brand-solid) 0%, #7c3aed 50%, #ec4899 100%)",
+          }}
+        >
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-3">
+              <BookOpen size={24} color="#fff" />
+              <span className="text-white text-lg font-bold">Markdocs</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 text-white font-medium">v0.3</span>
+            </div>
+            <h1 className="text-2xl font-bold text-white mb-1">Your markdown, supercharged.</h1>
+            <p className="text-sm text-white/70 max-w-lg">
+              Write, search, share, and sell Markdown documents. Voice-controlled. AI-ready. Zero lock-in.
+            </p>
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={onCreateDoc}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-white text-indigo-600 transition-all hover:scale-105"
+              >
+                <FileText size={14} /> New Document
+              </button>
+              <button
+                onClick={onSearch}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-white/15 text-white border border-white/20 transition-all hover:bg-white/25"
+              >
+                <Sparkles size={14} /> Search with AI
+              </button>
+              {onVoiceChat && (
+                <button
+                  onClick={onVoiceChat}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-white/15 text-white border border-white/20 transition-all hover:bg-white/25"
+                >
+                  <Mic size={14} /> Voice Mode
+                </button>
+              )}
+            </div>
           </div>
-          <h1 className="text-3xl font-bold mb-2">Welcome to Markdocs</h1>
-          <p className="text-lg" style={{ color: "var(--text-secondary)" }}>
-            Your Markdown-first documentation platform
-          </p>
+          {/* Decorative circles */}
+          <div className="absolute top-[-40px] right-[-40px] w-[200px] h-[200px] rounded-full bg-white/5" />
+          <div className="absolute bottom-[-60px] right-[100px] w-[150px] h-[150px] rounded-full bg-white/5" />
         </div>
 
-        {/* Take a Tour Banner */}
-        {onTakeTour && (
-          <button
-            onClick={onTakeTour}
-            className="w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all hover:shadow-md mb-6"
-            style={{
-              borderColor: "var(--brand)",
-              background: "var(--brand-light)",
-            }}
-          >
-            <div
-              className="p-2 rounded-lg"
-              style={{ background: "var(--brand)" }}
-            >
-              <Compass size={20} style={{ color: "#fff" }} />
-            </div>
-            <div className="flex-1">
-              <div className="font-semibold text-sm" style={{ color: "var(--brand)" }}>
-                Take a Tour
-              </div>
-              <div className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                Discover BM25 search, Marketplace, Mermaid diagrams, llms.txt, and more
-              </div>
-            </div>
-            <span className="text-xs px-2 py-1 rounded-full font-medium" style={{ background: "var(--brand)", color: "#fff" }}>
-              15 steps
-            </span>
-          </button>
-        )}
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4 mb-12">
-          <button
-            onClick={onCreateDoc}
-            className="flex items-center gap-4 p-5 rounded-xl border text-left transition-all hover:shadow-md"
-            style={{
-              borderColor: "var(--border)",
-              background: "var(--bg-secondary)",
-            }}
-          >
-            <div
-              className="p-2 rounded-lg"
-              style={{ background: "var(--brand-light)" }}
-            >
-              <FileText size={20} style={{ color: "var(--brand)" }} />
-            </div>
-            <div>
-              <div className="font-semibold text-sm">New Document</div>
-              <div
-                className="text-xs mt-0.5"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Start writing from scratch or a template
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={onSearch}
-            className="flex items-center gap-4 p-5 rounded-xl border text-left transition-all hover:shadow-md"
-            style={{
-              borderColor: "var(--border)",
-              background: "var(--bg-secondary)",
-            }}
-          >
-            <div
-              className="p-2 rounded-lg"
-              style={{ background: "var(--brand-light)" }}
-            >
-              <Search size={20} style={{ color: "var(--brand)" }} />
-            </div>
-            <div>
-              <div className="font-semibold text-sm">Search Docs</div>
-              <div
-                className="text-xs mt-0.5"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Find anything across all spaces
-              </div>
-            </div>
-          </button>
-        </div>
-
-        {/* Features */}
-        <h2 className="text-lg font-semibold mb-4">Features</h2>
-        <div className="grid grid-cols-3 gap-3 mb-12">
+        {/* Quick Actions Grid */}
+        <div className="grid grid-cols-4 gap-3 mb-6">
           {[
-            {
-              icon: Layout,
-              title: "Split Editor",
-              desc: "Write and preview side by side",
-            },
-            {
-              icon: Share2,
-              title: "One-click Share",
-              desc: "Public links in seconds",
-            },
-            {
-              icon: Tag,
-              title: "Tags & Search",
-              desc: "Find anything instantly",
-            },
-          ].map(({ icon: Icon, title, desc }) => (
-            <div
-              key={title}
-              className="p-4 rounded-xl border"
-              style={{
-                borderColor: "var(--border)",
-                background: "var(--bg-secondary)",
-              }}
+            { icon: FileText, label: "New Doc", desc: "Blank or template", onClick: onCreateDoc, color: "var(--brand)" },
+            { icon: Search, label: "Search", desc: "Press / anywhere", onClick: onSearch, color: "#0ea5e9" },
+            { icon: ShoppingBag, label: "Marketplace", desc: "Buy & sell docs", onClick: onMarketplace, color: "#8b5cf6" },
+            { icon: Mic, label: "Voice", desc: "Hands-free mode", onClick: onVoiceChat, color: "#10b981" },
+          ].map(({ icon: Icon, label, desc, onClick, color }) => (
+            <button
+              key={label}
+              onClick={onClick}
+              className="glow-card p-4 rounded-xl text-left transition-all group"
+              style={{ background: "var(--bg-secondary)" }}
             >
-              <Icon
-                size={18}
-                className="mb-2"
-                style={{ color: "var(--brand)" }}
-              />
-              <div className="font-medium text-sm">{title}</div>
-              <div
-                className="text-xs mt-0.5"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {desc}
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2.5" style={{ background: `${color}15`, color }}>
+                <Icon size={16} />
               </div>
-            </div>
+              <div className="text-xs font-semibold mb-0.5">{label}</div>
+              <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>{desc}</div>
+            </button>
           ))}
         </div>
 
-        {/* Recent Docs */}
-        {recentDocs.length > 0 && (
-          <>
-            <h2 className="text-lg font-semibold mb-4">Recent Documents</h2>
-            <div className="space-y-2">
-              {recentDocs.map((doc) => (
-                <button
-                  key={doc.id}
-                  onClick={() => onSelectDoc(doc.id)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all hover:shadow-sm"
-                  style={{
-                    borderColor: "var(--border)",
-                    background: "var(--bg-secondary)",
-                  }}
-                >
-                  <FileText size={16} style={{ color: "var(--brand)" }} />
-                  <span className="flex-1 font-medium text-sm">
-                    {doc.title}
-                  </span>
-                  <span
-                    className="text-xs"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    {new Date(doc.updated_at).toLocaleDateString()}
-                  </span>
-                </button>
-              ))}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {/* Recent Docs */}
+          <div className="col-span-2 rounded-xl p-4" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Recent Documents</span>
+              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{recentDocs.length} docs</span>
             </div>
-          </>
+            {recentDocs.length > 0 ? (
+              <div className="space-y-1">
+                {recentDocs.slice(0, 5).map((doc) => (
+                  <button
+                    key={doc.id}
+                    onClick={() => onSelectDoc(doc.id)}
+                    className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left transition-all glow-card"
+                    style={{ background: "var(--bg-tertiary)" }}
+                  >
+                    <FileText size={12} style={{ color: "var(--brand)" }} className="flex-shrink-0" />
+                    <span className="flex-1 text-xs font-medium truncate">{doc.title}</span>
+                    <span className="text-[10px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>
+                      {new Date(doc.updated_at).toLocaleDateString()}
+                    </span>
+                    <ArrowRight size={10} style={{ color: "var(--text-muted)" }} className="flex-shrink-0" />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-center py-6" style={{ color: "var(--text-muted)" }}>
+                No documents yet. Create your first one!
+              </div>
+            )}
+          </div>
+
+          {/* Feature Highlights */}
+          <div className="space-y-3">
+            {[
+              { icon: Sparkles, label: "BM25 Search", desc: "Natural language queries", color: "#0ea5e9" },
+              { icon: Zap, label: "Wiki Links", desc: "[[Page]] cross-refs", color: "#f59e0b" },
+              { icon: Globe, label: "AI Ready", desc: "llms.txt endpoint", color: "#10b981" },
+              { icon: Star, label: "Mermaid", desc: "Diagrams as code", color: "#ec4899" },
+            ].map(({ icon: Icon, label, desc, color }) => (
+              <div
+                key={label}
+                className="flex items-center gap-2.5 p-2.5 rounded-xl"
+                style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+              >
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${color}15`, color }}>
+                  <Icon size={13} />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold">{label}</div>
+                  <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>{desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tour Banner */}
+        {onTakeTour && (
+          <button
+            onClick={onTakeTour}
+            className="w-full flex items-center gap-3 p-3.5 rounded-xl text-left transition-all glow-card"
+            style={{ background: "var(--bg-secondary)" }}
+          >
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--brand-light)" }}>
+              <Compass size={16} style={{ color: "var(--brand)" }} />
+            </div>
+            <div className="flex-1">
+              <div className="text-xs font-semibold">Take a Tour</div>
+              <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+                15-step walkthrough of every feature including voice assistant, marketplace, and BM25 search
+              </div>
+            </div>
+            <ArrowRight size={14} style={{ color: "var(--text-muted)" }} />
+          </button>
         )}
       </div>
     </div>
