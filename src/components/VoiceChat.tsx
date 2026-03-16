@@ -1,15 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Mic, MicOff, X, Send, MessageCircle, Loader2, CheckCircle2, Bot, User } from "lucide-react";
-
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  action?: string;
-  status?: "thinking" | "done" | "error";
-}
+import { Mic, MicOff, X, Volume2 } from "lucide-react";
 
 interface VoiceChatProps {
   isOpen: boolean;
@@ -17,325 +9,414 @@ interface VoiceChatProps {
   onAction: (action: string, params: Record<string, string>) => void;
 }
 
-// Command parser — maps natural language to actions
-function parseCommand(text: string): { action: string; params: Record<string, string>; response: string } | null {
-  const lower = text.toLowerCase().trim();
+interface LogEntry {
+  id: string;
+  type: "heard" | "action" | "error" | "info";
+  text: string;
+}
 
-  // Create document
-  if (lower.match(/^(create|new|make|add|start)\s+(a\s+)?(new\s+)?(doc|document|page|note)/)) {
-    const titleMatch = text.match(/(?:called|named|titled|about)\s+["""]?(.+?)["""]?\s*$/i);
-    const title = titleMatch ? titleMatch[1] : "Untitled Document";
-    return { action: "create-doc", params: { title }, response: `Creating document "${title}"...` };
+// Speak text aloud via Web Speech Synthesis
+function speak(text: string, onDone?: () => void) {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    onDone?.();
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1.05;
+  utterance.pitch = 1;
+  utterance.volume = 0.9;
+  // Prefer a natural-sounding voice
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(
+    (v) => v.name.includes("Samantha") || v.name.includes("Google") || v.name.includes("Daniel") || v.lang.startsWith("en")
+  );
+  if (preferred) utterance.voice = preferred;
+  utterance.onend = () => onDone?.();
+  window.speechSynthesis.speak(utterance);
+}
+
+// Fuzzy command parser — handles accents, filler words, varied phrasing
+function parseCommand(raw: string): { action: string; params: Record<string, string>; reply: string } | null {
+  // Normalize: lowercase, trim, remove filler words
+  const text = raw.toLowerCase()
+    .replace(/\b(please|can you|could you|i want to|i'd like to|go ahead and|um+|uh+|okay|hey|hi|so)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // --- Create document ---
+  if (text.match(/(create|new|make|add|start|open)\s*(a\s*)?(new\s*)?(doc|document|page|note|file)/)) {
+    const titleMatch = raw.match(/(?:called|named|titled|about|for)\s+(.+?)\.?\s*$/i)
+      || raw.match(/(doc|document|page|note|file)\s+(.+?)\.?\s*$/i);
+    const title = titleMatch ? (titleMatch[2] || titleMatch[1]).trim() : "";
+    if (title && title.length > 2) {
+      return { action: "create-doc", params: { title }, reply: `Creating "${title}".` };
+    }
+    return { action: "create-doc-dialog", params: {}, reply: "Opening new document dialog." };
   }
 
-  // Create from template
-  if (lower.match(/(create|new|make|start)\s+(a\s+)?(meeting|rfc|adr|runbook)/)) {
-    const tplMap: Record<string, string> = { meeting: "tpl-meeting", rfc: "tpl-rfc", adr: "tpl-adr", runbook: "tpl-runbook" };
-    const tplKey = Object.keys(tplMap).find((k) => lower.includes(k)) || "meeting";
-    return { action: "create-from-template", params: { template_id: tplMap[tplKey], title: tplKey.charAt(0).toUpperCase() + tplKey.slice(1) }, response: `Creating ${tplKey} document from template...` };
+  // --- Templates ---
+  if (text.match(/(create|new|make|start)\s*(a\s*)?(meeting|rfc|adr|runbook|architecture|incident)/)) {
+    const map: Record<string, [string, string]> = {
+      meeting: ["tpl-meeting", "Meeting Notes"],
+      rfc: ["tpl-rfc", "RFC"],
+      adr: ["tpl-adr", "Architecture Decision Record"],
+      architecture: ["tpl-adr", "Architecture Decision Record"],
+      runbook: ["tpl-runbook", "Runbook"],
+      incident: ["tpl-runbook", "Incident Runbook"],
+    };
+    const key = Object.keys(map).find((k) => text.includes(k)) || "meeting";
+    const [id, name] = map[key];
+    return { action: "create-from-template", params: { template_id: id, title: name }, reply: `Creating ${name} from template.` };
   }
 
-  // Search
-  if (lower.match(/^(search|find|look\s*up|look\s*for|where|show\s*me)/)) {
-    const query = text.replace(/^(search|find|look\s*up|look\s*for|where\s+is|show\s*me)\s*(for\s+|about\s+)?/i, "").trim();
-    return { action: "search", params: { query }, response: `Searching for "${query}"...` };
+  // --- Search ---
+  if (text.match(/(search|find|look\s*for|look\s*up|where|show\s*me|get\s*me)/)) {
+    const query = raw
+      .replace(/^.*?(search|find|look\s*for|look\s*up|where\s*is|show\s*me|get\s*me)\s*(for\s*|about\s*)?/i, "")
+      .replace(/[?.!]$/, "")
+      .trim();
+    if (query.length > 1) {
+      return { action: "search", params: { query }, reply: `Searching for "${query}".` };
+    }
+    return { action: "open-search", params: {}, reply: "Opening search." };
   }
 
-  // Open marketplace
-  if (lower.match(/(open|go\s*to|show|browse)\s*(the\s+)?market/)) {
-    return { action: "open-marketplace", params: {}, response: "Opening the Marketplace..." };
+  // --- Marketplace ---
+  if (text.match(/(open|go\s*to|show|browse|visit)\s*(the\s*)?(market|store|shop)/)) {
+    return { action: "open-marketplace", params: {}, reply: "Opening the Marketplace." };
   }
 
-  // Toggle dark/light mode
-  if (lower.match(/(toggle|switch|change)\s*(to\s+)?(dark|light|theme|mode)/)) {
-    return { action: "toggle-theme", params: {}, response: "Toggling theme..." };
+  // --- Theme ---
+  if (text.match(/(dark|light|toggle|switch)\s*(mode|theme)?/) || text.match(/(mode|theme)\s*(dark|light|toggle|switch)/)) {
+    return { action: "toggle-theme", params: {}, reply: "Toggling theme." };
   }
 
-  // Share document
-  if (lower.match(/(share|publish)\s*(this|the|current)?\s*(doc|document|page)?/)) {
-    return { action: "share", params: {}, response: "Sharing the current document..." };
+  // --- Share ---
+  if (text.match(/(share|publish)\s*(this|the|current|my)?/)) {
+    return { action: "share", params: {}, reply: "Sharing the document." };
   }
 
-  // Save
-  if (lower.match(/(save|ctrl\s*s)/)) {
-    return { action: "save", params: {}, response: "Saving document..." };
+  // --- Save ---
+  if (text.match(/\bsave\b/)) {
+    return { action: "save", params: {}, reply: "Saved." };
   }
 
-  // New space
-  if (lower.match(/(create|new|add|make)\s+(a\s+)?(new\s+)?space/)) {
-    const nameMatch = text.match(/(?:called|named)\s+["""]?(.+?)["""]?\s*$/i);
-    const name = nameMatch ? nameMatch[1] : "";
-    return { action: "create-space", params: { name }, response: name ? `Creating space "${name}"...` : "Opening new space dialog..." };
+  // --- Export / Download ---
+  if (text.match(/(export|download)/)) {
+    return { action: "export", params: {}, reply: "Exporting as Markdown." };
   }
 
-  // Take tour
-  if (lower.match(/(take|start|show|give)\s*(a\s+|me\s+)?(the\s+)?tour/)) {
-    return { action: "tour", params: {}, response: "Starting the guided tour..." };
+  // --- New space ---
+  if (text.match(/(create|new|add|make)\s*(a\s*)?(new\s*)?space/)) {
+    const nameMatch = raw.match(/(?:called|named)\s+(.+?)\.?\s*$/i);
+    if (nameMatch) {
+      return { action: "create-space", params: { name: nameMatch[1].trim() }, reply: `Creating space "${nameMatch[1].trim()}".` };
+    }
+    return { action: "create-space-dialog", params: {}, reply: "Opening new space dialog." };
   }
 
-  // Export
-  if (lower.match(/(export|download)\s*(this|the|current)?\s*(doc|document|page)?/)) {
-    return { action: "export", params: {}, response: "Exporting document as Markdown..." };
+  // --- Tour ---
+  if (text.match(/(tour|guide|walkthrough|onboard)/)) {
+    return { action: "tour", params: {}, reply: "Starting the tour." };
+  }
+
+  // --- Go back / home ---
+  if (text.match(/(go\s*(back|home)|home|close\s*doc|close\s*this)/)) {
+    return { action: "go-home", params: {}, reply: "Going home." };
+  }
+
+  // --- Favorite ---
+  if (text.match(/(favorite|star|bookmark)\s*(this)?/)) {
+    return { action: "favorite", params: {}, reply: "Toggling favorite." };
+  }
+
+  // --- Stop / close assistant ---
+  if (text.match(/(stop|close|quit|exit|bye|goodbye|shut\s*up|never\s*mind)/)) {
+    return { action: "close-assistant", params: {}, reply: "Goodbye!" };
   }
 
   return null;
 }
 
 export default function VoiceChat({ isOpen, onClose, onAction }: VoiceChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      text: "Hey! I'm your Markdocs assistant. Tell me what you need — type or tap the mic to speak. Try:\n\n- \"Create a new RFC\"\n- \"Search for deployment guides\"\n- \"Open marketplace\"\n- \"Share this document\"\n- \"Toggle dark mode\"",
-      status: "done",
-    },
-  ]);
-  const [input, setInput] = useState("");
   const [listening, setListening] = useState(false);
-  const [processingVoice, setProcessingVoice] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [speaking, setSpeaking] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [log, setLog] = useState<LogEntry[]>([]);
+  const [status, setStatus] = useState<"idle" | "listening" | "processing" | "speaking">("idle");
   const recognitionRef = useRef<any>(null);
+  const logEndRef = useRef<HTMLDivElement>(null);
+  const autoRestartRef = useRef(true);
 
-  useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 200);
-  }, [isOpen]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const addMessage = useCallback((msg: Omit<ChatMessage, "id">) => {
-    setMessages((prev) => [...prev, { ...msg, id: Date.now().toString() + Math.random() }]);
+  const addLog = useCallback((type: LogEntry["type"], text: string) => {
+    setLog((prev) => [...prev.slice(-20), { id: Date.now() + "" + Math.random(), type, text }]);
   }, []);
 
-  const handleSend = useCallback(() => {
-    const text = input.trim();
-    if (!text) return;
-    setInput("");
+  // Auto-scroll log
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [log]);
 
-    addMessage({ role: "user", text });
-
-    // Parse and execute
-    const cmd = parseCommand(text);
-    if (cmd) {
-      addMessage({ role: "assistant", text: cmd.response, status: "thinking" });
-      setTimeout(() => {
-        onAction(cmd.action, cmd.params);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.status === "thinking" ? { ...m, status: "done" as const } : m
-          )
-        );
-      }, 400);
-    } else {
-      addMessage({
-        role: "assistant",
-        text: `I can help with these commands:\n- Create docs: "new document called X"\n- Templates: "create an RFC" / "new meeting notes"\n- Search: "search for API design"\n- Navigate: "open marketplace"\n- Actions: "share this doc", "save", "export"\n- Theme: "toggle dark mode"\n- Tour: "take a tour"`,
-        status: "done",
-      });
-    }
-  }, [input, addMessage, onAction]);
-
+  // Start recognition loop
   const startListening = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      addMessage({ role: "assistant", text: "Speech recognition isn't supported in this browser. Try Chrome or Edge.", status: "error" });
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      addLog("error", "Speech recognition not supported. Use Chrome or Edge.");
       return;
     }
 
-    const recognition = new SpeechRecognition();
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch {}
+    }
+
+    const recognition = new SR();
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = "en-US";
+    recognition.maxAlternatives = 3;
 
-    recognition.onstart = () => setListening(true);
+    recognition.onstart = () => {
+      setListening(true);
+      setStatus("listening");
+      setTranscript("");
+    };
 
     recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map((r: any) => r[0].transcript)
-        .join("");
-      setInput(transcript);
+      let interim = "";
+      let final = "";
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          final += result[0].transcript;
+        } else {
+          interim += result[0].transcript;
+        }
+      }
+      setTranscript(final || interim);
     };
 
     recognition.onend = () => {
       setListening(false);
-      setProcessingVoice(true);
-      // Auto-send after voice stops
-      setTimeout(() => {
-        setProcessingVoice(false);
-        const currentInput = (document.querySelector('[data-voice-input]') as HTMLInputElement)?.value;
-        if (currentInput?.trim()) {
-          // Trigger send
-          const text = currentInput.trim();
-          setInput("");
-          addMessage({ role: "user", text });
-          const cmd = parseCommand(text);
-          if (cmd) {
-            addMessage({ role: "assistant", text: cmd.response, status: "thinking" });
-            setTimeout(() => {
-              onAction(cmd.action, cmd.params);
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.status === "thinking" ? { ...m, status: "done" as const } : m
-                )
-              );
-            }, 400);
-          } else {
-            addMessage({ role: "assistant", text: "I didn't understand that. Try saying things like 'create a new document' or 'search for deployment guides'.", status: "done" });
-          }
+      const currentTranscript = transcript || (document.querySelector("[data-transcript]") as any)?.textContent || "";
+
+      if (currentTranscript.trim()) {
+        setStatus("processing");
+        addLog("heard", currentTranscript.trim());
+
+        const cmd = parseCommand(currentTranscript.trim());
+        if (cmd) {
+          addLog("action", cmd.reply);
+          setStatus("speaking");
+          setSpeaking(true);
+          speak(cmd.reply, () => {
+            setSpeaking(false);
+            if (cmd.action === "close-assistant") {
+              autoRestartRef.current = false;
+              onClose();
+              return;
+            }
+            onAction(cmd.action, cmd.params);
+            setStatus("idle");
+            // Auto-restart listening after action
+            if (autoRestartRef.current) {
+              setTimeout(() => startListening(), 600);
+            }
+          });
+        } else {
+          const fallback = "I didn't catch that. Try saying create a document, search for something, or open marketplace.";
+          addLog("info", fallback);
+          setStatus("speaking");
+          setSpeaking(true);
+          speak(fallback, () => {
+            setSpeaking(false);
+            setStatus("idle");
+            if (autoRestartRef.current) {
+              setTimeout(() => startListening(), 600);
+            }
+          });
         }
-      }, 300);
+      } else {
+        setStatus("idle");
+        // No speech detected, restart
+        if (autoRestartRef.current) {
+          setTimeout(() => startListening(), 300);
+        }
+      }
+      setTranscript("");
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (event: any) => {
+      if (event.error === "no-speech") {
+        // Silently restart
+        setListening(false);
+        setStatus("idle");
+        if (autoRestartRef.current) {
+          setTimeout(() => startListening(), 300);
+        }
+        return;
+      }
+      if (event.error === "aborted") return;
       setListening(false);
-      addMessage({ role: "assistant", text: "Couldn't hear you. Please try again.", status: "error" });
+      setStatus("idle");
+      addLog("error", `Error: ${event.error}. Try again.`);
+      if (autoRestartRef.current) {
+        setTimeout(() => startListening(), 1000);
+      }
     };
 
     recognitionRef.current = recognition;
     recognition.start();
-  }, [addMessage, onAction]);
+  }, [addLog, onAction, onClose, transcript]);
 
   const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
+    autoRestartRef.current = false;
+    try { recognitionRef.current?.abort(); } catch {}
     setListening(false);
+    setStatus("idle");
+    window.speechSynthesis?.cancel();
   }, []);
+
+  // Start listening when opened
+  useEffect(() => {
+    if (isOpen) {
+      autoRestartRef.current = true;
+      setLog([]);
+      // Greet
+      const greeting = "Hi! I'm listening. What would you like to do?";
+      addLog("info", greeting);
+      setStatus("speaking");
+      setSpeaking(true);
+      speak(greeting, () => {
+        setSpeaking(false);
+        startListening();
+      });
+    } else {
+      stopListening();
+    }
+    return () => {
+      autoRestartRef.current = false;
+      try { recognitionRef.current?.abort(); } catch {}
+      window.speechSynthesis?.cancel();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
+  const statusColor = status === "listening" ? "var(--accent-green)"
+    : status === "processing" ? "var(--accent-amber)"
+    : status === "speaking" ? "var(--brand)"
+    : "var(--text-muted)";
+
+  const statusText = status === "listening" ? "Listening..."
+    : status === "processing" ? "Processing..."
+    : status === "speaking" ? "Speaking..."
+    : "Ready";
+
   return (
-    <div className="fixed bottom-4 right-4 z-[90] animate-slideUp" style={{ width: 380 }}>
+    <div className="fixed inset-0 z-[90] flex items-end justify-center pb-6 pointer-events-none">
       <div
-        className="rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="pointer-events-auto w-[400px] rounded-2xl shadow-2xl overflow-hidden animate-slideUp"
         style={{
           background: "var(--bg-secondary)",
           border: "1px solid var(--border-bright)",
-          height: 520,
-          boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
+          boxShadow: "0 12px 60px rgba(0,0,0,0.5)",
         }}
       >
-        {/* Header */}
+        {/* Visualization */}
         <div
-          className="flex items-center gap-2 px-4 py-3"
-          style={{ background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border)" }}
+          className="relative flex flex-col items-center justify-center py-8"
+          style={{ background: "var(--bg-primary)" }}
         >
-          <div
-            className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: "var(--brand-solid)" }}
+          {/* Close */}
+          <button
+            onClick={() => { stopListening(); onClose(); }}
+            className="absolute top-3 right-3 p-1.5 rounded-md"
+            style={{ color: "var(--text-muted)" }}
           >
-            <Bot size={14} color="#fff" />
-          </div>
-          <div className="flex-1">
-            <div className="text-sm font-semibold">Markdocs Assistant</div>
-            <div className="text-xs" style={{ color: "var(--accent-green)" }}>
-              {listening ? "Listening..." : "Online"}
-            </div>
-          </div>
-          <button onClick={onClose} className="p-1 rounded-md" style={{ color: "var(--text-muted)" }}>
             <X size={16} />
           </button>
-        </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-auto px-4 py-3 space-y-3">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fadeIn`}
-            >
-              {msg.role === "assistant" && (
-                <div
-                  className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
-                  style={{ background: "var(--brand-light)" }}
-                >
-                  <Bot size={12} style={{ color: "var(--brand)" }} />
-                </div>
-              )}
-              <div
-                className="px-3 py-2 rounded-xl text-xs leading-relaxed max-w-[85%]"
-                style={{
-                  background: msg.role === "user" ? "var(--brand-solid)" : "var(--bg-tertiary)",
-                  color: msg.role === "user" ? "#fff" : "var(--text-primary)",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {msg.text}
-                {msg.status === "thinking" && (
-                  <span className="inline-flex items-center gap-1 ml-1" style={{ color: "var(--accent-amber)" }}>
-                    <Loader2 size={10} className="animate-spin" />
-                  </span>
-                )}
-                {msg.status === "done" && msg.role === "assistant" && msg.id !== "welcome" && (
-                  <span className="inline-flex items-center gap-0.5 ml-1" style={{ color: "var(--accent-green)" }}>
-                    <CheckCircle2 size={10} />
-                  </span>
-                )}
-              </div>
-              {msg.role === "user" && (
-                <div
-                  className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
-                  style={{ background: "var(--brand-solid)" }}
-                >
-                  <User size={12} color="#fff" />
-                </div>
-              )}
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <div
-          className="px-3 py-3"
-          style={{ borderTop: "1px solid var(--border)" }}
-        >
-          <div
-            className="flex items-center gap-2 px-3 py-2 rounded-xl"
-            style={{
-              background: "var(--bg-tertiary)",
-              border: listening ? "1px solid var(--brand)" : "1px solid var(--border)",
-              boxShadow: listening ? "0 0 12px rgba(129, 140, 248, 0.3)" : "none",
-              transition: "all 0.2s",
-            }}
-          >
-            <input
-              ref={inputRef}
-              data-voice-input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder={listening ? "Listening..." : "Type or speak a command..."}
-              className="flex-1 bg-transparent outline-none text-xs"
-              style={{ color: "var(--text-primary)" }}
-            />
-            {/* Voice button */}
+          {/* Orb */}
+          <div className="relative">
+            {/* Rings */}
+            {status === "listening" && (
+              <>
+                <div className="absolute inset-0 rounded-full border-2 animate-ping" style={{ borderColor: "var(--accent-green)", opacity: 0.3 }} />
+                <div className="voice-ring" style={{ width: 72, height: 72, top: -4, left: -4 }} />
+                <div className="voice-ring" style={{ width: 72, height: 72, top: -4, left: -4, animationDelay: "0.75s" }} />
+              </>
+            )}
+            {status === "speaking" && (
+              <div className="absolute inset-0 rounded-full animate-pulse" style={{ boxShadow: "0 0 30px rgba(129, 140, 248, 0.5)" }} />
+            )}
             <button
               onClick={listening ? stopListening : startListening}
-              className="relative p-2 rounded-lg transition-all"
+              className="relative w-16 h-16 rounded-full flex items-center justify-center transition-all"
               style={{
-                background: listening ? "var(--brand-solid)" : "var(--bg-elevated)",
-                color: listening ? "#fff" : "var(--text-muted)",
+                background: listening ? "var(--accent-green)" : speaking ? "var(--brand-solid)" : "var(--bg-elevated)",
+                color: listening || speaking ? "#fff" : "var(--text-secondary)",
+                boxShadow: listening ? "0 0 24px rgba(52, 211, 153, 0.4)" : speaking ? "0 0 24px rgba(129, 140, 248, 0.4)" : "none",
               }}
             >
-              {listening && (
-                <>
-                  <span className="voice-ring" style={{ width: 32, height: 32, top: 0, left: 0 }} />
-                  <span className="voice-ring" style={{ width: 32, height: 32, top: 0, left: 0, animationDelay: "0.5s" }} />
-                </>
-              )}
-              {listening ? <MicOff size={14} /> : <Mic size={14} />}
-            </button>
-            {/* Send */}
-            <button
-              onClick={handleSend}
-              disabled={!input.trim()}
-              className="p-2 rounded-lg transition-all disabled:opacity-30"
-              style={{ background: "var(--brand-solid)", color: "#fff" }}
-            >
-              <Send size={14} />
+              {listening ? <Mic size={24} /> : speaking ? <Volume2 size={24} /> : <MicOff size={24} />}
             </button>
           </div>
+
+          {/* Status */}
+          <div className="mt-4 text-xs font-medium" style={{ color: statusColor }}>
+            {statusText}
+          </div>
+
+          {/* Live transcript */}
+          {transcript && (
+            <div
+              data-transcript
+              className="mt-2 px-4 text-center text-sm font-medium animate-fadeIn max-w-[320px]"
+              style={{ color: "var(--text-primary)" }}
+            >
+              &ldquo;{transcript}&rdquo;
+            </div>
+          )}
+        </div>
+
+        {/* Action Log */}
+        <div
+          className="max-h-[180px] overflow-auto px-4 py-3 space-y-2"
+          style={{ borderTop: "1px solid var(--border)" }}
+        >
+          {log.map((entry) => (
+            <div key={entry.id} className="flex items-start gap-2 animate-fadeIn">
+              <div
+                className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0"
+                style={{
+                  background: entry.type === "heard" ? "var(--accent-amber)"
+                    : entry.type === "action" ? "var(--accent-green)"
+                    : entry.type === "error" ? "var(--accent-rose)"
+                    : "var(--text-muted)",
+                }}
+              />
+              <span className="text-xs" style={{
+                color: entry.type === "action" ? "var(--accent-green)"
+                  : entry.type === "error" ? "var(--accent-rose)"
+                  : "var(--text-secondary)",
+              }}>
+                {entry.type === "heard" && <span style={{ color: "var(--text-muted)" }}>You: </span>}
+                {entry.text}
+              </span>
+            </div>
+          ))}
+          <div ref={logEndRef} />
+        </div>
+
+        {/* Hint */}
+        <div
+          className="px-4 py-2.5 text-center"
+          style={{ borderTop: "1px solid var(--border)", background: "var(--bg-tertiary)" }}
+        >
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Say: &ldquo;create a new RFC&rdquo; &middot; &ldquo;search for API design&rdquo; &middot; &ldquo;open marketplace&rdquo; &middot; &ldquo;stop&rdquo;
+          </span>
         </div>
       </div>
     </div>

@@ -256,10 +256,16 @@ export default function Home() {
             case "create-doc":
               handleCreateDoc(params.title || "Untitled");
               break;
+            case "create-doc-dialog":
+              setShowNewDoc(true);
+              break;
             case "create-from-template":
               handleCreateDoc(params.title || "New Doc", params.template_id);
               break;
             case "search":
+              setShowSearch(true);
+              break;
+            case "open-search":
               setShowSearch(true);
               break;
             case "open-marketplace":
@@ -278,11 +284,27 @@ export default function Home() {
               if (params.name) handleCreateSpace(params.name);
               else setShowNewSpace(true);
               break;
+            case "create-space-dialog":
+              setShowNewSpace(true);
+              break;
             case "tour":
-              setShowTour(true);
+              setShowVoiceChat(false);
+              setTimeout(() => setShowTour(true), 300);
               break;
             case "export":
               if (activeDoc) window.open(`/api/documents/${activeDoc.id}/export?format=md`, "_blank");
+              break;
+            case "go-home":
+              setActiveDocId(null);
+              setActiveTab("docs");
+              break;
+            case "favorite":
+              if (activeDoc) {
+                fetch(`/api/documents/${activeDoc.id}/favorite`, { method: "POST" });
+              }
+              break;
+            case "close-assistant":
+              setShowVoiceChat(false);
               break;
           }
         }}
