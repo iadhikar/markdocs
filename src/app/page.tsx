@@ -9,6 +9,7 @@ import NewSpaceModal from "@/components/NewSpaceModal";
 import WelcomeView from "@/components/WelcomeView";
 import Marketplace from "@/components/Marketplace";
 import GuidedTour from "@/components/GuidedTour";
+import VoiceChat from "@/components/VoiceChat";
 import { useSpaces, useDocuments, useDocument } from "@/hooks/useDocuments";
 import { Document } from "@/lib/types";
 
@@ -20,6 +21,7 @@ export default function Home() {
   const [showSearch, setShowSearch] = useState(false);
   const [showNewDoc, setShowNewDoc] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [showVoiceChat, setShowVoiceChat] = useState(false);
   const [showNewSpace, setShowNewSpace] = useState(false);
   const [recentDocs, setRecentDocs] = useState<Document[]>([]);
 
@@ -41,20 +43,22 @@ export default function Home() {
       .then(setRecentDocs);
   }, []);
 
-  // Dark mode
+  // Dark-first: dark is default, light is opt-in
   useEffect(() => {
-    const saved = localStorage.getItem("markdocs-dark");
+    const saved = localStorage.getItem("markdocs-light");
     if (saved === "true") {
+      setDarkMode(false);
+      document.documentElement.classList.add("light");
+    } else {
       setDarkMode(true);
-      document.documentElement.classList.add("dark");
     }
   }, []);
 
   const toggleDark = () => {
     setDarkMode((prev) => {
       const next = !prev;
-      document.documentElement.classList.toggle("dark", next);
-      localStorage.setItem("markdocs-dark", String(next));
+      document.documentElement.classList.toggle("light", !next);
+      localStorage.setItem("markdocs-light", String(!next));
       return next;
     });
   };
@@ -244,6 +248,56 @@ export default function Home() {
         isOpen={showTour}
         onClose={handleCloseTour}
       />
+      <VoiceChat
+        isOpen={showVoiceChat}
+        onClose={() => setShowVoiceChat(false)}
+        onAction={(action, params) => {
+          switch (action) {
+            case "create-doc":
+              handleCreateDoc(params.title || "Untitled");
+              break;
+            case "create-from-template":
+              handleCreateDoc(params.title || "New Doc", params.template_id);
+              break;
+            case "search":
+              setShowSearch(true);
+              break;
+            case "open-marketplace":
+              setActiveTab("marketplace");
+              break;
+            case "toggle-theme":
+              toggleDark();
+              break;
+            case "share":
+              if (activeDoc) shareDocument();
+              break;
+            case "save":
+              if (activeDoc) handleSave({ content: activeDoc.content });
+              break;
+            case "create-space":
+              if (params.name) handleCreateSpace(params.name);
+              else setShowNewSpace(true);
+              break;
+            case "tour":
+              setShowTour(true);
+              break;
+            case "export":
+              if (activeDoc) window.open(`/api/documents/${activeDoc.id}/export?format=md`, "_blank");
+              break;
+          }
+        }}
+      />
+      {/* Floating Voice Chat Button */}
+      {!showVoiceChat && (
+        <button
+          onClick={() => setShowVoiceChat(true)}
+          className="fixed bottom-5 right-5 z-[80] w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 animate-pulse-glow"
+          style={{ background: "var(--brand-solid)", color: "#fff" }}
+          title="Voice Assistant (speak or type commands)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+        </button>
+      )}
     </div>
   );
 }
